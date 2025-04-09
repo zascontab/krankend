@@ -11,5 +11,6 @@ services:
     ports:
       - "7081:8080"
       - "7091:8090"
-    command: run -c /etc/krakend/krakend-simple.json
+    #command: run -c /etc/krakend/krakend-simple-fix.json
+    command: run -c /etc/krakend/krakend-simple-fix.json
     restart: on-failure

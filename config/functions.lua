@@ -1,7 +1,4 @@
 -- functions.lua
--- Funciones personalizadas para KrakenD
-
--- Función para extraer el número de teléfono del formato WhatsApp
 function extractPhone(whatsappId)
     if whatsappId == nil then
         return ""
@@ -19,7 +16,6 @@ function extractPhone(whatsappId)
     end
 end
 
--- Función para limpiar el texto JSON y escapar comillas
 function js(text)
     if text == nil then
         return ""

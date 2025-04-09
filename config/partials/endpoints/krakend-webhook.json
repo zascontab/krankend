@@ -1,0 +1,17 @@
+{
+    "endpoint": "/api/whatsapp/webhook",
+    "method": "POST",
+    "backend": [
+      {
+        "url_pattern": "/api/bot/process-message",
+        "host": ["http://localhost:7081"],
+        "encoding": "json",
+        "method": "POST",
+        "extra_config": {
+          "proxy": {
+            "sequential": false
+          }
+        }
+      }
+    ]
+  }

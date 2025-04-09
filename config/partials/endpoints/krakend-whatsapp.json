@@ -1,0 +1,55 @@
+{
+    "endpoint": "/api/bot/process-message",
+    "method": "POST",
+    "input_headers": ["Content-Type"],
+    "extra_config": {
+      "validation/json-schema": {
+        "type": "object",
+        "required": ["messageId", "sender", "content"],
+        "properties": {
+          "messageId": {
+            "type": "string"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "backend": [
+      {
+        "url_pattern": "/api/v1/conversation",
+        "host": ["http://172.17.0.1:8086"],
+        "encoding": "json",
+        "method": "POST",
+        "extra_config": {
+          "modifier/martian": {
+            "body.Modifier": {
+              "scope": ["request"],
+              "content": "{\"text\": \"{{.body.content}}\", \"session_id\": \"{{.body.sender}}\", \"language\": \"es\", \"data\": {\"forceMode\": \"customer_service\"}, \"agent_id\": 1}"
+            }
+          }
+        }
+      },
+      {
+        "url_pattern": "/api/messages/send-message",
+        "host": ["http://172.17.0.1:8089"],
+        "encoding": "json",
+        "method": "POST",
+        "extra_config": {
+          "modifier/martian": {
+            "body.Modifier": {
+              "scope": ["request"],
+              "content": "{\"phone\": \"{{extractPhone .body.sender}}\", \"message\": \"{{js .resp0_body.text}}\"}"
+            }
+          }
+        }
+      }
+    ]
+  }
