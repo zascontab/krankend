@@ -1,0 +1,41 @@
+[
+  {
+    "endpoint": "/api/whatsapp/send-otp",
+    "method": "POST",
+    "extra_config": {
+      "auth/validator": "@security/jwt.json"
+    },
+    "backend": [
+      {
+        "url_pattern": "/api/otp/generate",
+        "host": ["{{ .service_hosts.whatsapp_service }}"],
+        "encoding": "json",
+        "method": "POST"
+      }
+    ]
+  },
+  {
+    "endpoint": "/api/whatsapp/verify-otp",
+    "method": "POST",
+    "backend": [
+      {
+        "url_pattern": "/api/otp/verify",
+        "host": ["{{ .service_hosts.whatsapp_service }}"],
+        "encoding": "json",
+        "method": "POST"
+      }
+    ]
+  },
+  {
+    "endpoint": "/api/whatsapp/webhook",
+    "method": "POST",
+    "backend": [
+      {
+        "url_pattern": "/api/webhook",
+        "host": ["{{ .service_hosts.whatsapp_service }}"],
+        "encoding": "json",
+        "method": "POST"
+      }
+    ]
+  }
+]

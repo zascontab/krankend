@@ -1,0 +1,14 @@
+{
+  "environment": "development",
+  "debug_endpoint": true,
+  "service_hosts": {
+    "iam": "http://localhost:8081",
+    "ia_service": "http://localhost:8082",
+    "whatsapp_service": "http://localhost:8083",
+    "notification_service": "http://localhost:8084"
+  },
+  "security": {
+    "jwk_url": "http://localhost:8081/jwks.json",
+    "enable_https": false
+  }
+}

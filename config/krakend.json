@@ -1,0 +1,32 @@
+{
+  "$schema": "https://www.krakend.io/schema/v3.json",
+  "version": 3,
+  "name": "Microservices API Gateway",
+  "port": 8080,
+  "cache_ttl": "300s",
+  "timeout": "3s",
+  "extra_config": {
+    "telemetry/logging": {
+      "level": "DEBUG",
+      "prefix": "[KRAKEND]",
+      "syslog": false,
+      "stdout": true
+    },
+    "telemetry/metrics": {
+      "collection_time": "60s",
+      "listen_address": ":8090"
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/health",
+          "host": ["http://172.17.0.1:8089"]
+        }
+      ]
+    }
+  ]
+}

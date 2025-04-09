@@ -1,0 +1,27 @@
+[
+  {
+    "endpoint": "/api/ia/conversation",
+    "method": "POST",
+    "extra_config": {
+      "auth/validator": "@security/jwt.json",
+      "qos/ratelimit/router": "@security/rate_limiting.json"
+    },
+    "backend": [
+      {
+        "url_pattern": "/api/conversation",
+        "host": ["{{ .service_hosts.ia_service }}"],
+        "encoding": "json",
+        "method": "POST",
+        "extra_config": {
+          "modifier/martian": {
+            "header.Modifier": {
+              "scope": ["request"],
+              "name": "X-User-ID",
+              "value": "{{ .claims.user_id }}"
+            }
+          }
+        }
+      }
+    ]
+  }
+]
