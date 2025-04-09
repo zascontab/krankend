@@ -2,7 +2,7 @@
   "$schema": "https://www.krakend.io/schema/v3.json",
   "version": 3,
   "name": "Microservices API Gateway",
-  "port": 8080, 
+  "port": 8080,
   "cache_ttl": "300s",
   "timeout": "3s",
   "extra_config": {
@@ -10,21 +10,304 @@
       "level": "DEBUG",
       "prefix": "[KRAKEND]",
       "syslog": false,
-      "stdout": true
+      "stdout": true,
+      "format": "json",
+      "skip_paths": ["/health"],
+      "include_headers": true,
+      "exclude_headers": ["Authorization", "Cookie"]
     },
     "telemetry/metrics": {
       "collection_time": "60s",
-      "listen_address": ":8090"  
+      "listen_address": ":8090"
     }
   },
   "endpoints": [
     {
       "endpoint": "/health",
       "method": "GET",
+      "extra_config": {
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["GET"]
+        }
+      },
       "backend": [
         {
           "url_pattern": "/health",
           "host": ["http://172.17.0.1:8089"]
+        }
+      ]
+    },
+    {
+      "endpoint": "/auth/login",
+      "method": "POST",
+      "extra_config": {
+        "qos/ratelimit/router": {
+          "max_rate": 100,
+          "strategy": "ip",
+          "client_max_rate": 10,
+          "capacity": 10
+        },
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Content-Type"]
+        },
+        "validation/json-schema": {
+          "type": "object",
+          "required": ["username", "password"],
+          "properties": {
+            "username": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 50
+            },
+            "password": {
+              "type": "string",
+              "minLength": 8
+            }
+          }
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/v1/auth/login",
+          "host": ["http://172.17.0.1:8081"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/auth/refresh",
+      "method": "POST",
+      "extra_config": {
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Content-Type"]
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/v1/auth/refresh",
+          "host": ["http://172.17.0.1:8081"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/user/profile",
+      "method": "GET",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://172.17.0.1:8081/jwks.json",
+          "cache": true,
+          "cache_duration": 3600,
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            ["sub", "x-user-id"],
+            ["realm_access.roles", "x-user-roles"]
+          ]
+        },
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["GET"],
+          "allow_headers": ["Authorization"]
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/v1/users/profile",
+          "host": ["http://172.17.0.1:8081"],
+          "encoding": "json"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/ia/conversation",
+      "method": "POST",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://172.17.0.1:8081/jwks.json",
+          "cache": true,
+          "cache_duration": 3600,
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            ["sub", "x-user-id"],
+            ["realm_access.roles", "x-user-roles"]
+          ]
+        },
+        "qos/ratelimit/router": {
+          "max_rate": 100,
+          "strategy": "ip",
+          "client_max_rate": 10,
+          "capacity": 10
+        },
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Authorization", "Content-Type"]
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/conversation",
+          "host": ["http://172.17.0.1:8082"],
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "modifier/martian": {
+              "header.Modifier": {
+                "scope": ["request"],
+                "name": "X-User-ID",
+                "value": "{{ .claims.user_id }}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/whatsapp/send-otp",
+      "method": "POST",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://172.17.0.1:8081/jwks.json",
+          "cache": true,
+          "cache_duration": 3600,
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            ["sub", "x-user-id"]
+          ]
+        },
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Authorization", "Content-Type"]
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/otp/generate",
+          "host": ["http://172.17.0.1:8083"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/whatsapp/verify-otp",
+      "method": "POST",
+      "extra_config": {
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Content-Type"]
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/otp/verify",
+          "host": ["http://172.17.0.1:8083"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/whatsapp/webhook",
+      "method": "POST",
+      "extra_config": {
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Content-Type"]
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/webhook",
+          "host": ["http://172.17.0.1:8083"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/notifications/register",
+      "method": "POST",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://172.17.0.1:8081/jwks.json",
+          "cache": true,
+          "cache_duration": 3600,
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            ["sub", "x-user-id"]
+          ]
+        },
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Authorization", "Content-Type"]
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/device/register",
+          "host": ["http://172.17.0.1:8084"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/notifications/send",
+      "method": "POST",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://172.17.0.1:8081/jwks.json",
+          "cache": true,
+          "cache_duration": 3600,
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            ["sub", "x-user-id"]
+          ]
+        },
+        "security/cors": {
+          "allow_origins": ["*"],
+          "allow_methods": ["POST"],
+          "allow_headers": ["Authorization", "Content-Type"]
+        },
+        "validation/json-schema": {
+          "type": "object",
+          "required": ["user_id", "message"],
+          "properties": {
+            "user_id": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/push/send",
+          "host": ["http://172.17.0.1:8084"],
+          "encoding": "json",
+          "method": "POST"
         }
       ]
     }
