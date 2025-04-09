@@ -2,7 +2,7 @@
   "$schema": "https://www.krakend.io/schema/v3.json",
   "version": 3,
   "name": "Microservices API Gateway",
-  "port": 8080,
+  "port": 8080, 
   "cache_ttl": "300s",
   "timeout": "3s",
   "extra_config": {
@@ -14,7 +14,7 @@
     },
     "telemetry/metrics": {
       "collection_time": "60s",
-      "listen_address": ":8090"
+      "listen_address": ":8090"  
     }
   },
   "endpoints": [
