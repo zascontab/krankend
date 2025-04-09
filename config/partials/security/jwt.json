@@ -6,6 +6,14 @@
   "disable_jwk_security": {{ if eq .environment "development" }}true{{ else }}false{{ end }},
   "propagate_claims": [
     ["sub", "x-user-id"],
-    ["realm_access.roles", "x-user-roles"]
-  ]
+    ["realm_access.roles", "x-user-roles"],
+    ["email", "x-user-email"],
+    ["name", "x-user-name"]
+  ],
+  "roles_key": "realm_access.roles",
+  "roles": ["user", "admin"],
+  "roles_key_is_nested": true,
+  "scopes_key": "scope",
+  "scopes": ["read", "write"],
+  "scope_strategy": "all"
 }

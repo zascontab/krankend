@@ -1,0 +1,52 @@
+{
+    "$schema": "https://www.krakend.io/schema/v3.json",
+    "version": 3,
+    "name": "Microservices API Gateway",
+    "port": 8080,
+    "cache_ttl": "300s",
+    "timeout": "3s",
+    {{if eq .environment "production"}}
+    "tls": {
+      "public_key": "/etc/certificates/cert.pem",
+      "private_key": "/etc/certificates/key.pem",
+      "min_version": "TLS12",
+      "max_version": "TLS13",
+      "cipher_suites": [
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+      ],
+      "curve_preferences": ["CurveP256", "CurveP384"],
+      "prefer_server_cipher_suites": true
+    },
+    {{end}}
+    "extra_config": {
+      "telemetry/logging": {
+        "level": {{if eq .environment "development"}}"DEBUG"{{else}}"INFO"{{end}},
+        "prefix": "[KRAKEND]",
+        "syslog": false,
+        "stdout": true,
+        "format": "json",
+        "skip_paths": ["/health"],
+        "include_headers": true,
+        "exclude_headers": ["Authorization", "Cookie"]
+      },
+      "telemetry/metrics": {
+        "collection_time": "60s",
+        "listen_address": ":8090"
+      },
+      "modifier/lua": {
+        "sources": ["functions.lua"],
+        "md5": {
+          "functions.lua": "file:/etc/krakend/functions.lua"
+        }
+      },
+      "security/cors": "@security/cors.json"
+    },
+    "endpoints": [
+      {{ template "health.json" . }},
+      {{ template "auth.json" . }},
+      {{ template "ia.json" . }},
+      {{ template "whatsapp.json" . }},
+      {{ template "notifications.json" . }}
+    ]
+  }

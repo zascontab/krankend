@@ -1,0 +1,18 @@
+{
+    "environment": "production",
+    "debug_endpoint": false,
+    "service_hosts": {
+      "iam": "http://iam-service:8081",
+      "ia_service": "http://ia-service:8082",
+      "whatsapp_service": "http://whatsapp-service:8089",
+      "notification_service": "http://notification-service:8084",
+      "bot_service": "http://bot-service:8086"
+    },
+    "security": {
+      "jwk_url": "http://iam-service:8081/jwks.json",
+      "enable_https": true
+    },
+    "hosts": {
+      "frontend": "https://app.tudominio.com"
+    }
+  }

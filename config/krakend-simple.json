@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.krakend.io/schema/v3.json",
   "version": 3,
-  "name": "Microservices API Gateway - Complete",
+  "name": "Microservices API Gateway - Complete with CORS",
   "port": 8080,
   "debug_endpoint": true,
   "cache_ttl": "300s",
@@ -17,6 +17,13 @@
     "telemetry/metrics": {
       "collection_time": "60s",
       "listen_address": ":8090"
+    },
+    "security/cors": {
+      "allow_origins": ["*"],
+      "allow_methods": ["GET", "POST", "PUT", "DELETE"],
+      "allow_headers": ["Origin", "Authorization", "Content-Type"],
+      "expose_headers": ["Content-Length"],
+      "max_age": "3600"
     }
   },
   "endpoints": [
@@ -37,12 +44,18 @@
       "extra_config": {
         "validation/json-schema": {
           "type": "object",
-          "required": ["phone", "message"],
+          "required": ["phone_number", "user_id", "purpose", "channel"],
           "properties": {
-            "phone": {
+            "phone_number": {
               "type": "string"
             },
-            "message": {
+            "user_id": {
+              "type": "integer"
+            },
+            "purpose": {
+              "type": "string"
+            },
+            "channel": {
               "type": "string"
             }
           }

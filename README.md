@@ -607,3 +607,18 @@ Archivo de configuración completo con todos los aspectos de seguridad implement
 - [ ] Logs de seguridad configurados correctamente
 - [ ] Plan de rotación de claves documentado
 - [ ] Pruebas de penetración ejecutadas
+
+
+
+## comando para enviar el whatsapp
+
+curl -v -X POST http://localhost:7081/api/whatsapp/send-message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone_number": "+593983606090",
+    "user_id": 1,
+    "purpose": "login",
+    "channel": "whatsapp"
+  }'
+
+  
