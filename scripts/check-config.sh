@@ -3,12 +3,17 @@ set -e
 
 cd "$(dirname "$0")/.."
 echo "Validando configuración de KrakenD..."
+
+# Comprobar si el archivo krakend.tmpl existe
+if [ -f "$PWD/config/krakend.tmpl" ]; then
+  KRAKEND_CONFIG="$PWD/config/krakend.tmpl"
+else
+  KRAKEND_CONFIG="$PWD/config/krakend.json"
+fi
+
+# Validar el archivo de configuración directamente
 docker run --rm -v "$PWD/config:/etc/krakend" \
-  -e FC_ENABLE=1 \
-  -e FC_SETTINGS=./settings/dev.json \
-  -e FC_PARTIALS=./partials \
-  -e FC_OUT=/tmp/krakend-check.json \
-  devopsfaith/krakend check -d -c /etc/krakend/krakend.json
+  devopsfaith/krakend check -c /etc/krakend/krakend.json
 
 if [ $? -eq 0 ]; then
   echo "✅ Configuración válida"

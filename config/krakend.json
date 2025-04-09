@@ -19,6 +19,12 @@
     "telemetry/metrics": {
       "collection_time": "60s",
       "listen_address": ":8090"
+    },
+    "modifier/lua": {
+      "sources": ["functions.lua"],
+      "md5": {
+        "functions.lua": "file:/etc/krakend/functions.lua"
+      }
     }
   },
   "endpoints": [
@@ -219,25 +225,7 @@
         }
       ]
     },
-    {
-      "endpoint": "/api/whatsapp/webhook",
-      "method": "POST",
-      "extra_config": {
-        "security/cors": {
-          "allow_origins": ["*"],
-          "allow_methods": ["POST"],
-          "allow_headers": ["Content-Type"]
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/api/webhook",
-          "host": ["http://172.17.0.1:8083"],
-          "encoding": "json",
-          "method": "POST"
-        }
-      ]
-    },
+
     {
       "endpoint": "/api/notifications/register",
       "method": "POST",
@@ -310,6 +298,108 @@
           "method": "POST"
         }
       ]
-    }
+    },
+    {
+        "endpoint": "/api/whatsapp/webhook",
+        "method": "POST",
+        "backend": [
+          {
+            "url_pattern": "/api/messages",
+            "host": ["{{ .service_hosts.whatsapp_service }}"],
+            "encoding": "json",
+            "method": "POST",
+            "extra_config": {
+              "modifier/proxy": {
+                "sequential": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "endpoint": "/api/bot/process-message",
+        "method": "POST",
+        "backend": [
+          {
+            "url_pattern": "/api/v1/conversation",
+            "host": ["{{ .service_hosts.bot_service }}"],
+            "encoding": "json",
+            "method": "POST",
+            "group": "bot_conversation",
+            "extra_config": {
+              "modifier/martian": {
+                "body.Modifier": {
+                  "scope": ["request"],
+                  "content": "{\"text\": \"{{.Resp0_body.content}}\", \"session_id\": \"{{.Resp0_body.sender}}\", \"language\": \"es\", \"data\": {\"forceMode\": \"customer_service\"}, \"agent_id\": 1}"
+                }
+              }
+            }
+          },
+          {
+            "url_pattern": "/api/messages/send-message",
+            "host": ["{{ .service_hosts.whatsapp_service }}"],
+            "encoding": "json",
+            "method": "POST",
+            "group": "send_response",
+            "extra_config": {
+              "modifier/martian": {
+                "body.Modifier": {
+                  "scope": ["request"],
+                  "content": "{\"phone\": \"{{.Resp0_body.sender}}\", \"message\": \"{{.Resp1_body.text}}\"}"
+                }
+              }
+            },
+            "deny": ["Resp0_body.messageId"]
+          }
+        ],
+        "extra_config": {
+          "validation/json-schema": {
+            "type": "object",
+            "required": ["messageId", "sender", "content"],
+            "properties": {
+              "messageId": {
+                "type": "string"
+              },
+              "sender": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      {
+        "endpoint": "/api/bot/send-message",
+        "method": "POST",
+        "extra_config": {
+          "auth/validator": "@security/jwt.json",
+          "validation/json-schema": {
+            "type": "object",
+            "required": ["phone", "message"],
+            "properties": {
+              "phone": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "backend": [
+          {
+            "url_pattern": "/api/messages/send-message",
+            "host": ["{{ .service_hosts.whatsapp_service }}"],
+            "encoding": "json",
+            "method": "POST"
+          }
+        ]
+      }
   ]
+
 }

@@ -1,0 +1,102 @@
+[
+    {
+      "endpoint": "/api/whatsapp/webhook",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/api/bot/process-message",
+          "host": ["{{ .service_hosts.self }}"],
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "proxy": {
+              "sequential": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/bot/process-message",
+      "method": "POST",
+      "input_headers": ["Content-Type"],
+      "input_query_strings": [],
+      "backend": [
+        {
+          "url_pattern": "/api/v1/conversation",
+          "host": ["{{ .service_hosts.bot_service }}"],
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "modifier/martian": {
+              "body.Modifier": {
+                "scope": ["request"],
+                "content": "{\"text\": \"{{.body.content}}\", \"session_id\": \"{{.body.sender}}\", \"language\": \"es\", \"data\": {\"forceMode\": \"customer_service\"}, \"agent_id\": 1}"
+              }
+            }
+          }
+        },
+        {
+          "url_pattern": "/api/messages/send-message",
+          "host": ["{{ .service_hosts.whatsapp_service }}"],
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {
+            "modifier/martian": {
+              "body.Modifier": {
+                "scope": ["request"],
+                "content": "{\"phone\": \"{{extractPhone .body.sender}}\", \"message\": \"{{js .resp0_body.text}}\"}"
+              }
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "validation/json-schema": {
+          "type": "object",
+          "required": ["messageId", "sender", "content"],
+          "properties": {
+            "messageId": {
+              "type": "string"
+            },
+            "sender": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "/api/whatsapp/send-message",
+      "method": "POST",
+      "extra_config": {
+        "auth/validator": "@security/jwt.json",
+        "validation/json-schema": {
+          "type": "object",
+          "required": ["phone", "message"],
+          "properties": {
+            "phone": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/api/messages/send-message",
+          "host": ["{{ .service_hosts.whatsapp_service }}"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    }
+  ]
