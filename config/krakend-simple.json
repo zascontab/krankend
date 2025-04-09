@@ -1,140 +1,32 @@
 {
-    "$schema": "https://www.krakend.io/schema/v3.json",
-    "version": 3,
-    "name": "Microservices API Gateway - Simple",
-    "port": 8080,
-    "cache_ttl": "300s",
-    "timeout": "3s",
-    "extra_config": {
-      "telemetry/logging": {
-        "level": "DEBUG",
-        "prefix": "[KRAKEND]",
-        "syslog": false,
-        "stdout": true,
-        "format": "json"
-      },
-      "telemetry/metrics": {
-        "collection_time": "60s",
-        "listen_address": ":8090"
-      },
-      "modifier/lua": {
-        "sources": ["functions.lua"],
-        "md5": {
-          "functions.lua": "file:/etc/krakend/functions.lua"
+  "$schema": "https://www.krakend.io/schema/v3.json",
+  "version": 3,
+  "name": "Microservices API Gateway - Simple",
+  "port": 8080,
+  "debug_endpoint": true,
+  "endpoints": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/health",
+          "host": ["http://172.17.0.1:8089"],
+          "encoding": "no-op"
         }
-      }
+      ]
     },
-    "endpoints": [
-      {
-        "endpoint": "/health",
-        "method": "GET",
-        "backend": [
-          {
-            "url_pattern": "/health",
-            "host": ["http://localhost:8089"],
-            "encoding": "no-op"
-          }
-        ]
-      },
-      {
-        "endpoint": "/api/whatsapp/webhook",
-        "method": "POST",
-        "backend": [
-          {
-            "url_pattern": "/api/bot/process-message",
-            "host": ["http://localhost:7081"],
-            "encoding": "json",
-            "method": "POST"
-          }
-        ]
-      },
-      {
-        "endpoint": "/api/bot/process-message",
-        "method": "POST",
-        "input_headers": ["Content-Type"],
-        "input_query_strings": [],
-        "backend": [
-          {
-            "url_pattern": "/api/v1/conversation",
-            "host": ["http://localhost:8086"],
-            "encoding": "json",
-            "method": "POST",
-            "extra_config": {
-              "modifier/martian": {
-                "body.Modifier": {
-                  "scope": ["request"],
-                  "content": "{\"text\": \"{{.body.content}}\", \"session_id\": \"{{.body.sender}}\", \"language\": \"es\", \"data\": {\"forceMode\": \"customer_service\"}, \"agent_id\": 1}"
-                }
-              }
-            }
-          },
-          {
-            "url_pattern": "/send-otp",
-            "host": ["http://localhost:8089"],
-            "encoding": "json",
-            "method": "POST",
-            "extra_config": {
-              "modifier/martian": {
-                "body.Modifier": {
-                  "scope": ["request"],
-                  "content": "{\"phone_number\": \"{{extractPhone .body.sender}}\", \"user_id\": 1, \"purpose\": \"ia_response\", \"channel\": \"whatsapp\"}"
-                }
-              }
-            }
-          }
-        ],
-        "extra_config": {
-          "validation/json-schema": {
-            "type": "object",
-            "required": ["messageId", "sender", "content"],
-            "properties": {
-              "messageId": {
-                "type": "string"
-              },
-              "sender": {
-                "type": "string"
-              },
-              "content": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string"
-              }
-            }
-          }
+    {
+      "endpoint": "/api/whatsapp/send-message",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/send-otp",
+          "host": ["http://172.17.0.1:8089"],
+          "encoding": "json",
+          "method": "POST"
         }
-      },
-      {
-        "endpoint": "/api/whatsapp/send-message",
-        "method": "POST",
-        "extra_config": {
-          "validation/json-schema": {
-            "type": "object",
-            "required": ["phone_number", "user_id", "purpose", "channel"],
-            "properties": {
-              "phone_number": {
-                "type": "string"
-              },
-              "user_id": {
-                "type": "integer"
-              },
-              "purpose": {
-                "type": "string"
-              },
-              "channel": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "backend": [
-          {
-            "url_pattern": "/send-otp",
-            "host": ["http://localhost:8089"],
-            "encoding": "json",
-            "method": "POST"
-          }
-        ]
-      }
-    ]
-  }
+      ]
+    }
+  ]
+}

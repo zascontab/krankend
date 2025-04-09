@@ -4,7 +4,10 @@ services:
     image: devopsfaith/krakend:latest
     volumes:
       - ./config:/etc/krakend
+    environment:
+      FC_ENABLE: 1
     ports:
       - "7081:8080"
       - "7091:8090"
+    command: run -c /etc/krakend/krakend-simple.json
     restart: on-failure
