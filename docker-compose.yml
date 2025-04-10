@@ -11,6 +11,7 @@ services:
     ports:
       - "7081:8080"
       - "7091:8090"
-    #command: run -c /etc/krakend/krakend-simple-fix.json
-    command: run -c /etc/krakend/krakend-simple-fix.json
+    command: run -c /etc/krakend/krakend-full-flow.json
     restart: on-failure
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

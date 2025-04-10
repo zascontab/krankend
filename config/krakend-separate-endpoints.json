@@ -1,0 +1,56 @@
+{
+  "$schema": "https://www.krakend.io/schema/v3.json",
+  "version": 3,
+  "name": "Endpoints Separados WhatsApp-IA",
+  "port": 8080,
+  "debug_endpoint": true,
+  "extra_config": {
+    "telemetry/logging": {
+      "level": "DEBUG",
+      "prefix": "[KRAKEND]",
+      "stdout": true,
+      "format": "json"
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/api/v1/health",
+          "host": ["http://172.17.0.1:8086"],
+          "encoding": "json"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/ia/ask",
+      "method": "POST",
+      "input_headers": ["Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/api/v1/conversation",
+          "host": ["http://172.17.0.1:8086"],
+          "encoding": "json",
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/whatsapp/send",
+      "method": "POST",
+      "input_headers": ["Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/send-otp",
+          "host": ["http://172.17.0.1:8089"],
+          "encoding": "json",
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    }
+  ]
+}

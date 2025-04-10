@@ -1,0 +1,40 @@
+{
+    "$schema": "https://www.krakend.io/schema/v3.json",
+    "version": 3,
+    "name": "Microservices API Gateway - Basic Test",
+    "port": 8080,
+    "debug_endpoint": true,
+    "extra_config": {
+      "telemetry/logging": {
+        "level": "DEBUG",
+        "prefix": "[KRAKEND]",
+        "stdout": true
+      }
+    },
+    "endpoints": [
+      {
+        "endpoint": "/health",
+        "method": "GET",
+        "output_encoding": "no-op",
+        "backend": [
+          {
+            "url_pattern": "/",
+            "host": ["http://localhost:8090"],
+            "encoding": "no-op"
+          }
+        ]
+      },
+      {
+        "endpoint": "/test-whatsapp",
+        "method": "POST",
+        "backend": [
+          {
+            "url_pattern": "/api/messages/send-message",
+            "host": ["http://localhost:8089"],
+            "encoding": "json",
+            "method": "POST"
+          }
+        ]
+      }
+    ]
+  }
