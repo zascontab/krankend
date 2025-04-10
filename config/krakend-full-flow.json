@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.krakend.io/schema/v3.json",
   "version": 3,
-  "name": "Flujo Completo WhatsApp-IA",
+  "name": "Microservicios API Gateway",
   "port": 8080,
   "debug_endpoint": true,
   "extra_config": {
@@ -25,6 +25,20 @@
       ]
     },
     {
+      "endpoint": "/api/ia/conversation",
+      "method": "POST",
+      "input_headers": ["Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/api/v1/conversation",
+          "host": ["http://172.17.0.1:8086"],
+          "method": "POST",
+          "encoding": "json",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
       "endpoint": "/api/whatsapp/send-message",
       "method": "POST",
       "input_headers": ["Content-Type"],
@@ -32,49 +46,9 @@
         {
           "url_pattern": "/send-otp",
           "host": ["http://172.17.0.1:8089"],
-          "encoding": "json",
           "method": "POST",
+          "encoding": "json",
           "disable_host_sanitize": true
-        }
-      ]
-    },
-    {
-      "endpoint": "/api/process-and-respond",
-      "method": "POST",
-      "input_headers": ["Content-Type"],
-      "output_encoding": "json",
-      "extra_config": {
-        "proxy": {
-          "sequential": true
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/api/v1/conversation",
-          "host": ["http://172.17.0.1:8086"],
-          "method": "POST",
-          "encoding": "json",
-          "group": "ia",
-          "disable_host_sanitize": true,
-          "extra_config": {
-            "proxy": {
-              "flatmap_filter": [
-                "text",
-                "session_id",
-                "metadata"
-              ]
-            }
-          },
-          "target": "ia_response"
-        },
-        {
-          "url_pattern": "/send-otp",
-          "host": ["http://172.17.0.1:8089"],
-          "method": "POST",
-          "encoding": "json",
-          "group": "whatsapp",
-          "disable_host_sanitize": true,
-          "target": "whatsapp_response"
         }
       ]
     }
