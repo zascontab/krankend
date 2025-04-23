@@ -1,6 +1,6 @@
 {
   "alg": "RS256",
-  "jwk_url": "{{ .service_hosts.iam }}/jwks.json",
+  "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
   "cache": true,
   "cache_duration": 3600,
   "disable_jwk_security": {{ if eq .environment "development" }}true{{ else }}false{{ end }},

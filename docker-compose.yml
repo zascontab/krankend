@@ -7,15 +7,24 @@ services:
     environment:
       FC_ENABLE: 1
       FC_PARTIALS: "/etc/krakend/partials"
-      FC_SETTINGS: "/etc/krakend/settings"
+      FC_SETTINGS: "/etc/krakend/settings/dev.json"
     ports:
       - "7081:8080"
       - "7091:8090"
     command: run -c /etc/krakend/krakend.json
     restart: on-failure
     networks:
-      - ia-whatsapp-network
+      - microservices_network
+      - zitadel_network
+      - whatsapp_network
+      - incidence_backend_default
 
 networks:
-  ia-whatsapp-network:
+  microservices_network:
+    driver: bridge
+  zitadel_network:
+    external: true
+  whatsapp_network:
+    external: true
+  incidence_backend_default:
     external: true
