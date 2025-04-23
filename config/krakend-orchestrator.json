@@ -208,9 +208,6 @@
             },
             "mediaUrl": {
               "type": "string"
-            },
-            "data": {
-              "type": "object"
             }
           }
         }

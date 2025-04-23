@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.krakend.io/schema/v3.json",
   "version": 3,
-  "name": "Microservicios API Gateway",
+  "name": "Microservicios API Gateway con Orquestador",
   "port": 8080,
   "debug_endpoint": true,
   "extra_config": {
@@ -46,6 +46,34 @@
         {
           "url_pattern": "/send-otp",
           "host": ["http://172.17.0.1:8089"],
+          "method": "POST",
+          "encoding": "json",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/process-and-respond",
+      "method": "POST",
+      "input_headers": ["Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/api/process",
+          "host": ["http://ia-whatsapp-orchestrator:8000"],
+          "method": "POST",
+          "encoding": "json",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/whatsapp/webhook",
+      "method": "POST",
+      "input_headers": ["Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/api/webhook",
+          "host": ["http://ia-whatsapp-orchestrator:8000"],
           "method": "POST",
           "encoding": "json",
           "disable_host_sanitize": true

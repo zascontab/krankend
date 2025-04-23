@@ -622,3 +622,5 @@ curl -v -X POST http://localhost:7081/api/whatsapp/send-message \
   }'
 
   
+
+  sudo systemctl start gogs

@@ -116,7 +116,7 @@
       },
       "backend": [
         {
-          "url_pattern": "/whatsapp/send-message",
+          "url_pattern": "/send-otp",
           "host": ["http://172.17.0.1:8089"],
           "method": "POST",
           "encoding": "json",
@@ -208,9 +208,6 @@
             },
             "mediaUrl": {
               "type": "string"
-            },
-            "data": {
-              "type": "object"
             }
           }
         }
