@@ -1,0 +1,19 @@
+{
+    "validator": "custom",
+    "validator_url": "http://token-service:8081/api/v1/validate",
+    "method": "POST",
+    "body_encoding": "json",
+    "cache": true,
+    "cache_duration": 3600,
+    "oauth_server_config": {
+      "use_introspection": true,
+      "server_url": "http://token-service:8081"
+    },
+    "forward_claims": [
+      ["sub", "x-user-id"],
+      ["realm_access.roles", "x-user-roles"],
+      ["email", "x-user-email"],
+      ["name", "x-user-name"],
+      ["org_id", "x-tenant-id"]
+    ]
+  }

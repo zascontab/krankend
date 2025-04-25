@@ -7,7 +7,7 @@ services:
     environment:
       FC_ENABLE: 1
       FC_PARTIALS: "/etc/krakend/partials"
-      FC_SETTINGS: "/etc/krakend/settings/dev.json"
+      FC_SETTINGS: "/etc/krakend/settings"
     ports:
       - "7081:8080"
       - "7091:8090"
