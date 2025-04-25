@@ -8,7 +8,7 @@
   "timeout": "3s",
   "extra_config": {
     "telemetry/logging": {
-      "level": "DEBUG",
+      "level": "INFO",
       "prefix": "[KRAKEND]",
       "stdout": true,
       "format": "json",
@@ -16,7 +16,13 @@
     },
     "telemetry/metrics": {
       "collection_time": "60s",
-      "listen_address": ":8090"
+      "listen_address": ":8090",
+      "router_disabled": false,
+      "endpoint_disabled": false,
+      "proxy_disabled": false,
+      "backend_disabled": false,
+      "auth_failures_enabled": true,
+      "auth_success_enabled": true
     },
     "security/cors": {
       "allow_origins": ["*"],
@@ -50,37 +56,41 @@
       ]
     },
     {
+      "endpoint": "/auth/validate",
+      "method": "POST",
+      "input_headers": ["Content-Type", "Authorization"],
+      "backend": [
+        {
+          "url_pattern": "/api/v1/validate",
+          "host": ["http://token-service:8081"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
       "endpoint": "/api/ia/conversation",
       "method": "POST",
-      "input_headers": ["Content-Type"],
+      "input_headers": ["Content-Type", "Authorization"],
       "extra_config": {
         "auth/validator": {
-          "validator": "custom",
-          "validator_url": "http://token-service:8081/api/v1/validate",
-          "method": "POST",
-          "body_encoding": "json",
+          "alg": "RS256",
+          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
+          "audience": ["ia-service"],
+          "issuer": "http://zitadel:8075",
           "cache": true,
-          "cache_duration": 3600
+          "cache_duration": 3600,
+          "disable_strict_jwk_security": true
         },
         "validation/json-schema": {
           "type": "object",
           "required": ["text", "session_id"],
           "properties": {
-            "text": {
-              "type": "string"
-            },
-            "session_id": {
-              "type": "string"
-            },
-            "language": {
-              "type": "string"
-            },
-            "data": {
-              "type": "object"
-            },
-            "agent_id": {
-              "type": "integer"
-            }
+            "text": { "type": "string" },
+            "session_id": { "type": "string" },
+            "language": { "type": "string" },
+            "data": { "type": "object" },
+            "agent_id": { "type": "integer" }
           }
         },
         "qos/ratelimit/router": {
@@ -93,54 +103,35 @@
       "backend": [
         {
           "url_pattern": "/api/v1/conversation",
-          "host": ["http://172.17.0.1:8086"],
+          "host": ["http://ia-service:8086"],
           "method": "POST",
-          "encoding": "json",
-          "disable_host_sanitize": true,
-          "extra_config": {
-            "modifier/martian": {
-              "header.Modifier": {
-                "scope": ["request"],
-                "name": "X-User-ID",
-                "value": "{{ .headers.X-User-ID }}"
-              }
-            }
-          }
+          "encoding": "json"
         }
       ]
     },
     {
       "endpoint": "/api/whatsapp/send-message",
       "method": "POST",
-      "input_headers": ["Content-Type"],
+      "input_headers": ["Content-Type", "Authorization"],
       "extra_config": {
         "auth/validator": {
-          "validator": "custom",
-          "validator_url": "http://token-service:8081/api/v1/validate",
-          "method": "POST",
-          "body_encoding": "json",
+          "alg": "RS256",
+          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
+          "audience": ["whatsapp-service"],
+          "issuer": "http://zitadel:8075",
           "cache": true,
-          "cache_duration": 3600
+          "cache_duration": 3600,
+          "disable_strict_jwk_security": true
         },
         "validation/json-schema": {
           "type": "object",
           "required": ["phone_number", "message"],
           "properties": {
-            "phone_number": {
-              "type": "string"
-            },
-            "user_id": {
-              "type": "integer"
-            },
-            "message": {
-              "type": "string"
-            },
-            "channel": {
-              "type": "string"
-            },
-            "purpose": {
-              "type": "string"
-            }
+            "phone_number": { "type": "string" },
+            "user_id": { "type": "integer" },
+            "message": { "type": "string" },
+            "channel": { "type": "string" },
+            "purpose": { "type": "string" }
           }
         },
         "qos/ratelimit/router": {
@@ -153,57 +144,39 @@
       "backend": [
         {
           "url_pattern": "/api/messages/send-message",
-          "host": ["http://172.17.0.1:8089"],
+          "host": ["http://whatsapp-service:8080"],
           "method": "POST",
-          "encoding": "json",
-          "disable_host_sanitize": true
+          "encoding": "json"
         }
       ]
     },
     {
       "endpoint": "/api/process-and-respond",
       "method": "POST",
-      "input_headers": ["Content-Type"],
+      "input_headers": ["Content-Type", "Authorization"],
       "extra_config": {
         "auth/validator": {
-          "validator": "custom",
-          "validator_url": "http://token-service:8081/api/v1/validate",
-          "method": "POST",
-          "body_encoding": "json",
+          "alg": "RS256",
+          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
+          "audience": ["ia-whatsapp-orchestrator"],
+          "issuer": "http://zitadel:8075",
           "cache": true,
-          "cache_duration": 3600
+          "cache_duration": 3600,
+          "disable_strict_jwk_security": true
         },
         "validation/json-schema": {
           "type": "object",
           "required": ["text", "phone_number"],
           "properties": {
-            "text": {
-              "type": "string"
-            },
-            "session_id": {
-              "type": "string"
-            },
-            "language": {
-              "type": "string"
-            },
-            "data": {
-              "type": "object"
-            },
-            "agent_id": {
-              "type": "integer"
-            },
-            "phone_number": {
-              "type": "string"
-            },
-            "user_id": {
-              "type": "integer"
-            },
-            "purpose": {
-              "type": "string"
-            },
-            "channel": {
-              "type": "string"
-            }
+            "text": { "type": "string" },
+            "session_id": { "type": "string" },
+            "language": { "type": "string" },
+            "data": { "type": "object" },
+            "agent_id": { "type": "integer" },
+            "phone_number": { "type": "string" },
+            "user_id": { "type": "integer" },
+            "purpose": { "type": "string" },
+            "channel": { "type": "string" }
           }
         },
         "qos/ratelimit/router": {
@@ -216,10 +189,9 @@
       "backend": [
         {
           "url_pattern": "/api/process",
-          "host": ["http://ia-whatsapp-orchestrator:8000"],
+          "host": ["http://orchestrator:8000"],
           "method": "POST",
-          "encoding": "json",
-          "disable_host_sanitize": true
+          "encoding": "json"
         }
       ]
     },
@@ -232,71 +204,55 @@
           "type": "object",
           "required": ["messageId", "sender", "content"],
           "properties": {
-            "messageId": {
-              "type": "string"
-            },
-            "sender": {
-              "type": "string"
-            },
-            "pushName": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "integer"
-            },
-            "type": {
-              "type": "string"
-            },
-            "content": {
-              "type": "string"
-            },
-            "mediaUrl": {
-              "type": "string"
-            },
-            "data": {
-              "type": "object"
-            }
+            "messageId": { "type": "string" },
+            "sender": { "type": "string" },
+            "pushName": { "type": "string" },
+            "timestamp": { "type": "integer" },
+            "type": { "type": "string" },
+            "content": { "type": "string" },
+            "mediaUrl": { "type": "string" },
+            "data": { "type": "object" }
           }
         }
       },
       "backend": [
         {
           "url_pattern": "/api/webhook",
-          "host": ["http://ia-whatsapp-orchestrator:8000"],
+          "host": ["http://orchestrator:8000"],
           "method": "POST",
-          "encoding": "json",
-          "disable_host_sanitize": true
+          "encoding": "json"
         }
       ]
     },
     {
       "endpoint": "/api/bot/process-message",
       "method": "POST",
-      "input_headers": ["Content-Type"],
+      "input_headers": ["Content-Type", "Authorization"],
       "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
+          "audience": ["ia-service", "whatsapp-service"],
+          "issuer": "http://zitadel:8075",
+          "cache": true,
+          "cache_duration": 3600,
+          "disable_strict_jwk_security": true
+        },
         "validation/json-schema": {
           "type": "object",
           "required": ["messageId", "sender", "content"],
           "properties": {
-            "messageId": {
-              "type": "string"
-            },
-            "sender": {
-              "type": "string"
-            },
-            "content": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string"
-            }
+            "messageId": { "type": "string" },
+            "sender": { "type": "string" },
+            "content": { "type": "string" },
+            "type": { "type": "string" }
           }
         }
       },
       "backend": [
         {
           "url_pattern": "/api/v1/conversation",
-          "host": ["http://172.17.0.1:8086"],
+          "host": ["http://ia-service:8086"],
           "encoding": "json",
           "method": "POST",
           "extra_config": {
@@ -310,14 +266,14 @@
         },
         {
           "url_pattern": "/api/messages/send-message",
-          "host": ["http://172.17.0.1:8089"],
+          "host": ["http://whatsapp-service:8080"],
           "encoding": "json",
           "method": "POST",
           "extra_config": {
             "modifier/martian": {
               "body.Modifier": {
                 "scope": ["request"],
-                "content": "{\"phone\": \"{{luaCall \"extractPhone\" .body.sender}}\", \"message\": \"{{luaCall \"js\" .resp0_body.text}}\"}"
+                "content": "{\"phone_number\": \"{{.body.sender}}\", \"message\": \"{{.resp0_body.text}}\"}"
               }
             }
           }
@@ -329,8 +285,8 @@
       "method": "GET",
       "backend": [
         {
-          "url_pattern": "/metrics",
-          "host": ["http://token-service:8081"],
+          "url_pattern": "/__metrics",
+          "host": ["http://localhost:8090"],
           "encoding": "no-op"
         }
       ]
