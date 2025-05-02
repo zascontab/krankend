@@ -1,67 +1,19 @@
 {
   "$schema": "https://www.krakend.io/schema/v3.json",
   "version": 3,
-  "name": "Microservicios API Gateway - Configuración Optimizada",
+  "name": "Rantipay API Gateway",
   "port": 8080,
-  "debug_endpoint": true,
-  "cache_ttl": "300s",
-  "timeout": "3s",
-  "extra_config": {
-    "telemetry/logging": {
-      "level": "INFO",
-      "prefix": "[KRAKEND]",
-      "stdout": true,
-      "format": "json",
-      "skip_paths": ["/health"]
-    },
-    "telemetry/metrics": {
-      "collection_time": "60s",
-      "listen_address": ":8090",
-      "router_disabled": false,
-      "endpoint_disabled": false,
-      "proxy_disabled": false,
-      "backend_disabled": false,
-      "auth_failures_enabled": true,
-      "auth_success_enabled": true
-    },
-    "security/cors": {
-      "allow_origins": ["*"],
-      "allow_methods": ["GET", "POST", "PUT", "DELETE"],
-      "allow_headers": ["Origin", "Authorization", "Content-Type"],
-      "expose_headers": ["Content-Length"],
-      "max_age": "3600"
-    }
-  },
+  "timeout": "10s",
+  "cache_ttl": "3600s",
+  "output_encoding": "json",
   "endpoints": [
     {
-      "endpoint": "/health",
-      "method": "GET",
-      "backend": [
-        {
-          "url_pattern": "/health",
-          "host": ["http://token-service:8081"],
-          "encoding": "json"
-        }
-      ]
-    },
-    {
-      "endpoint": "/auth/token",
-      "method": "GET",
-      "backend": [
-        {
-          "url_pattern": "/api/v1/token",
-          "host": ["http://token-service:8081"],
-          "encoding": "json"
-        }
-      ]
-    },
-    {
-      "endpoint": "/auth/validate",
+      "endpoint": "/auth/register-otp",
       "method": "POST",
-      "input_headers": ["Content-Type", "Authorization"],
+      "output_encoding": "json",
       "backend": [
         {
-          "url_pattern": "/api/v1/validate",
+          "url_pattern": "/api/v1/register-otp",
           "host": ["http://token-service:8081"],
           "encoding": "json",
           "method": "POST"
@@ -69,227 +21,59 @@
       ]
     },
     {
-      "endpoint": "/api/ia/conversation",
+      "endpoint": "/auth/verify-otp",
       "method": "POST",
-      "input_headers": ["Content-Type", "Authorization"],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
-          "audience": ["ia-service"],
-          "issuer": "http://zitadel:8075",
-          "cache": true,
-          "cache_duration": 3600,
-          "disable_strict_jwk_security": true
-        },
-        "validation/json-schema": {
-          "type": "object",
-          "required": ["text", "session_id"],
-          "properties": {
-            "text": { "type": "string" },
-            "session_id": { "type": "string" },
-            "language": { "type": "string" },
-            "data": { "type": "object" },
-            "agent_id": { "type": "integer" }
-          }
-        },
-        "qos/ratelimit/router": {
-          "max_rate": 100,
-          "strategy": "ip",
-          "client_max_rate": 10,
-          "capacity": 10
-        }
-      },
+      "output_encoding": "json",
       "backend": [
         {
-          "url_pattern": "/api/v1/conversation",
-          "host": ["http://ia-service:8086"],
-          "method": "POST",
-          "encoding": "json"
-        }
-      ]
-    },
-    {
-      "endpoint": "/api/whatsapp/send-message",
-      "method": "POST",
-      "input_headers": ["Content-Type", "Authorization"],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
-          "audience": ["whatsapp-service"],
-          "issuer": "http://zitadel:8075",
-          "cache": true,
-          "cache_duration": 3600,
-          "disable_strict_jwk_security": true
-        },
-        "validation/json-schema": {
-          "type": "object",
-          "required": ["phone_number", "message"],
-          "properties": {
-            "phone_number": { "type": "string" },
-            "user_id": { "type": "integer" },
-            "message": { "type": "string" },
-            "channel": { "type": "string" },
-            "purpose": { "type": "string" }
-          }
-        },
-        "qos/ratelimit/router": {
-          "max_rate": 50,
-          "strategy": "ip",
-          "client_max_rate": 5,
-          "capacity": 5
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/api/messages/send-message",
-          "host": ["http://whatsapp-service:8080"],
-          "method": "POST",
-          "encoding": "json"
-        }
-      ]
-    },
-    {
-      "endpoint": "/api/process-and-respond",
-      "method": "POST",
-      "input_headers": ["Content-Type", "Authorization"],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
-          "audience": ["ia-whatsapp-orchestrator"],
-          "issuer": "http://zitadel:8075",
-          "cache": true,
-          "cache_duration": 3600,
-          "disable_strict_jwk_security": true
-        },
-        "validation/json-schema": {
-          "type": "object",
-          "required": ["text", "phone_number"],
-          "properties": {
-            "text": { "type": "string" },
-            "session_id": { "type": "string" },
-            "language": { "type": "string" },
-            "data": { "type": "object" },
-            "agent_id": { "type": "integer" },
-            "phone_number": { "type": "string" },
-            "user_id": { "type": "integer" },
-            "purpose": { "type": "string" },
-            "channel": { "type": "string" }
-          }
-        },
-        "qos/ratelimit/router": {
-          "max_rate": 30,
-          "strategy": "ip",
-          "client_max_rate": 3,
-          "capacity": 3
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/api/process",
-          "host": ["http://orchestrator:8000"],
-          "method": "POST",
-          "encoding": "json"
-        }
-      ]
-    },
-    {
-      "endpoint": "/api/whatsapp/webhook",
-      "method": "POST",
-      "input_headers": ["Content-Type"],
-      "extra_config": {
-        "validation/json-schema": {
-          "type": "object",
-          "required": ["messageId", "sender", "content"],
-          "properties": {
-            "messageId": { "type": "string" },
-            "sender": { "type": "string" },
-            "pushName": { "type": "string" },
-            "timestamp": { "type": "integer" },
-            "type": { "type": "string" },
-            "content": { "type": "string" },
-            "mediaUrl": { "type": "string" },
-            "data": { "type": "object" }
-          }
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/api/webhook",
-          "host": ["http://orchestrator:8000"],
-          "method": "POST",
-          "encoding": "json"
-        }
-      ]
-    },
-    {
-      "endpoint": "/api/bot/process-message",
-      "method": "POST",
-      "input_headers": ["Content-Type", "Authorization"],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://zitadel:8075/.well-known/jwks.json",
-          "audience": ["ia-service", "whatsapp-service"],
-          "issuer": "http://zitadel:8075",
-          "cache": true,
-          "cache_duration": 3600,
-          "disable_strict_jwk_security": true
-        },
-        "validation/json-schema": {
-          "type": "object",
-          "required": ["messageId", "sender", "content"],
-          "properties": {
-            "messageId": { "type": "string" },
-            "sender": { "type": "string" },
-            "content": { "type": "string" },
-            "type": { "type": "string" }
-          }
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/api/v1/conversation",
-          "host": ["http://ia-service:8086"],
+          "url_pattern": "/api/v1/verify-otp",
+          "host": ["http://token-service:8081"],
           "encoding": "json",
-          "method": "POST",
-          "extra_config": {
-            "modifier/martian": {
-              "body.Modifier": {
-                "scope": ["request"],
-                "content": "{\"text\": \"{{.body.content}}\", \"session_id\": \"{{.body.sender}}\", \"language\": \"es\", \"data\": {\"forceMode\": \"customer_service\"}, \"agent_id\": 1}"
-              }
-            }
-          }
-        },
-        {
-          "url_pattern": "/api/messages/send-message",
-          "host": ["http://whatsapp-service:8080"],
-          "encoding": "json",
-          "method": "POST",
-          "extra_config": {
-            "modifier/martian": {
-              "body.Modifier": {
-                "scope": ["request"],
-                "content": "{\"phone_number\": \"{{.body.sender}}\", \"message\": \"{{.resp0_body.text}}\"}"
-              }
-            }
-          }
+          "method": "POST"
         }
       ]
     },
     {
-      "endpoint": "/metrics",
-      "method": "GET",
+      "endpoint": "/auth/validate",
+      "method": "POST",
+      "output_encoding": "json",
       "backend": [
         {
-          "url_pattern": "/__metrics",
-          "host": ["http://localhost:8090"],
-          "encoding": "no-op"
+          "url_pattern": "/api/v1/validates",
+          "host": ["http://token-service:8081"],
+          "encoding": "json",
+          "method": "POST"
         }
       ]
     }
-  ]
+  ],
+  "extra_config": {
+    "security/cors": {
+      "allow_origins": ["*"],
+      "allow_methods": ["GET", "POST", "OPTIONS"],
+      "allow_headers": ["Authorization", "Content-Type"],
+      "expose_headers": ["Content-Length"],
+      "allow_credentials": true,
+      "max_age": "12h"
+    },
+    "security/jwt": {
+      "jwks_uri": "http://keycloak:8080/realms/rantipay/protocol/openid-connect/certs",
+      "roles_key": "roles",
+      "roles_key_is_nested": true,
+      "issuer": "http://keycloak:8080/realms/rantipay",
+      "audience": ["317305190531334149"]
+    },
+    "telemetry/logging": {
+      "level": "DEBUG",
+      "prefix": "[KRAKEND]"
+    },
+    "router": {
+      "return_error_details": true
+    },
+    "endpoint/rate-limit": {
+      "max_rate": 100,
+      "capacity": 100,
+      "every": "1m"
+    }
+  }
 }

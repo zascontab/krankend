@@ -1,0 +1,40 @@
+{
+  "$schema": "https://www.krakend.io/schema/v3.json",
+  "version": 3,
+  "name": "Token Service Integration Test",
+  "port": 8080,
+  "debug_endpoint": true,
+  "timeout": "3s",
+  "extra_config": {
+    "telemetry/logging": {
+      "level": "DEBUG",
+      "prefix": "[KRAKEND]",
+      "stdout": true,
+      "format": "json"
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/health",
+          "host": ["http://token-service:8081"],
+          "encoding": "json"
+        }
+      ]
+    },
+    {
+      "endpoint": "/auth/token",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/api/v1/token",
+          "host": ["http://token-service:8081"],
+          "encoding": "json"
+        }
+      ]
+    }
+  ]
+}

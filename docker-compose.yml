@@ -1,48 +1,54 @@
-version: '3.7'
-
 services:
   krakend:
     image: devopsfaith/krakend:latest
+    container_name: wankarlab-krakend
     volumes:
       - ./config:/etc/krakend
     environment:
-      FC_ENABLE: 1
-      FC_PARTIALS: "/etc/krakend/partials"
-      FC_SETTINGS: "/etc/krakend/settings/dev.json"
+      - FC_ENABLE=1
+      - FC_PARTIALS=/etc/krakend/partials
+      - FC_SETTINGS=/etc/krakend/settings
+      - KRAKEND_LUA_ENABLED=true
     ports:
       - "7081:8080"
       - "7091:8090"
-    command: run -c /etc/krakend/krakend-new.json
-    restart: on-failure
+    command: ["run", "-c", "/etc/krakend/krakend-new.json"]
+    restart: unless-stopped
     networks:
       - microservices_network
-      - zitadel_network
-      - whatsapp_network
     depends_on:
       - token-service
-      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   token-service:
     build:
-      context: ./services/token-service
+      context: ../services/token-service
       dockerfile: Dockerfile
+    container_name: wankarlab-token-service
     ports:
-      - "8081:8081"
-    depends_on:
-      - redis
-      - zitadel
+      - "8082:8081"
     environment:
+      - TS_KEYCLOAK_CLIENT_ID=otp-service-user
+      - TS_KEYCLOAK_CLIENT_SECRET=gO8RVOxmRsVXpR8cEiVDEAXAMmE9eDUW
+      - TS_KEYCLOAK_TOKEN_ENDPOINT=http://keycloak:8080/realms/rantipay/protocol/openid-connect/token
+      - TS_KEYCLOAK_JWKS_ENDPOINT=http://keycloak:8080/realms/rantipay/protocol/openid-connect/certs
+      - TS_KEYCLOAK_SCOPES=openid profile email
+      - TS_KEYCLOAK_AUDIENCE=317305190531334149
       - TS_REDIS_HOST=redis
       - TS_REDIS_PORT=6379
-      - TS_ZITADEL_TOKEN_ENDPOINT=http://zitadel:8075/oauth/v2/token
-      - TS_ZITADEL_CLIENT_ID=${ZITADEL_CLIENT_ID}
-      - TS_ZITADEL_CLIENT_SECRET=${ZITADEL_CLIENT_SECRET}
-      - TS_ZITADEL_SCOPES=openid profile email
-      - TS_ZITADEL_AUDIENCE=token-service
-      - LOG_LEVEL=debug
+      - TS_REDIS_PASSWORD=
+      - TS_REDIS_DB=0
+      - TOKEN_SERVICE_PORT=8081
+      - TOKEN_SERVICE_LOG_LEVEL=debug
+    depends_on:
+      - redis
     networks:
       - microservices_network
-      - zitadel_network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
@@ -53,8 +59,9 @@ services:
 
   redis:
     image: redis:alpine
+    container_name: wankarlab-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     command: ["redis-server", "--appendonly", "yes"]
@@ -66,88 +73,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  orchestrator:
-    build:
-      context: ./services/ia-whatsapp-orchestrator
-      dockerfile: Dockerfile
-    container_name: ia-whatsapp-orchestrator
-    ports:
-      - "8000:8000"
-    environment:
-      - PORT=8000
-      - IA_SERVICE_URL=http://ia-service:8086
-      - WHATSAPP_SERVICE_URL=http://whatsapp-service:8080
-      - LOG_LEVEL=info
-      - MAX_RETRIES=3
-      - RETRY_DELAY_MS=2000
-    restart: unless-stopped
-    networks:
-      - microservices_network
-      - zitadel_network
-      - whatsapp_network
-
-  ia-service:
-    build:
-      context: ./services/ia-service
-      dockerfile: Dockerfile
-    ports:
-      - "8086:8086"
-    restart: unless-stopped
-    networks:
-      - microservices_network
-
-  whatsapp-service:
-    build:
-      context: ./services/whatsapp-service
-      dockerfile: Dockerfile
-    ports:
-      - "7082:8080"
-    restart: unless-stopped
-    networks:
-      - microservices_network
-      - whatsapp_network
-
-  zitadel:
-    image: ghcr.io/zitadel/zitadel:v2.61.0
-    command: start-from-init --masterkey "MasterkeyNeedsToHave32Characters" --tlsMode disabled
-    ports:
-      - "8075:8075"
-    environment:
-      - ZITADEL_DATABASE_POSTGRES_HOST=db
-      - ZITADEL_DATABASE_POSTGRES_PORT=5432
-      - ZITADEL_DATABASE_POSTGRES_DATABASE=zitadel
-      - ZITADEL_DATABASE_POSTGRES_USER=zitadel
-      - ZITADEL_DATABASE_POSTGRES_PASSWORD=zitadel
-      - ZITADEL_EXTERNALSECURE=false
-    restart: unless-stopped
-    depends_on:
-      - db
-    networks:
-      - zitadel_network
-
-  db:
-    image: postgres:17-alpine
-    ports:
-      - "54323:5432"
-    environment:
-      - POSTGRES_USER=zitadel
-      - POSTGRES_PASSWORD=zitadel
-      - POSTGRES_DB=zitadel
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - zitadel_network
+      start_period: 10s
 
 networks:
   microservices_network:
-    driver: bridge
-  zitadel_network:
-    driver: bridge
-  whatsapp_network:
-    driver: bridge
+    external: true
 
 volumes:
   redis_data:
-  postgres_data:
