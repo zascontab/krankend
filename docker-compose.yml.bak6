@@ -1,8 +1,6 @@
-
 services:
   krakend:
-    #image: devopsfaith/krakend:latest
-    image: devopsfaith/krakend:latest  # Mantén esta imagen por ahora
+    image: devopsfaith/krakend:latest
     container_name: wankarlab-krakend
     volumes:
       - ./config:/etc/krakend
@@ -11,10 +9,9 @@ services:
       - FC_PARTIALS=/etc/krakend/partials
       - FC_SETTINGS=/etc/krakend/settings
       - KRAKEND_LUA_ENABLED=true
-      - KRAKEND_LOG_LEVEL=DEBUG
     ports:
-      - "8025:8080"
-      - "8091:8091" # Puerto de administración - se mantiene en 8091
+      - "7081:8080"
+      - "7091:8090"
     command: ["run", "-c", "/etc/krakend/krakend-new.json"]
     restart: unless-stopped
     networks:
@@ -27,14 +24,14 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-      
+
   token-service:
     build:
       context: ../services/token-service
       dockerfile: Dockerfile
     container_name: wankarlab-token-service
     ports:
-      - "8021:8081"
+      - "8082:8081"
     environment:
       - TS_KEYCLOAK_CLIENT_ID=otp-service-user
       - TS_KEYCLOAK_CLIENT_SECRET=gO8RVOxmRsVXpR8cEiVDEAXAMmE9eDUW
@@ -48,12 +45,10 @@ services:
       - TS_REDIS_DB=0
       - TOKEN_SERVICE_PORT=8081
       - TOKEN_SERVICE_LOG_LEVEL=debug
-      - TS_OTP_SERVICE_ENDPOINT=http://krakend:8080/send-otp
-      - KEYCLOAK_PUBLIC_URL=http://localhost:8020
-      - TS_REDIRECT_URI=http://localhost:8021/api/v1/callback
+      - TS_OTP_SERVICE_ENDPOINT=http://otp-service:8084/send-otp
     depends_on:
       - redis
-    #- otp-service
+      - otp-service
     networks:
       - microservices_network
     restart: unless-stopped
@@ -63,12 +58,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-      
+
   redis:
     image: redis:alpine
     container_name: wankarlab-redis
     ports:
-      - "8023:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     command: ["redis-server", "--appendonly", "yes"]
@@ -81,27 +76,27 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-      
-  # otp-service:
-  #   build:
-  #     context: ../services/otp-service
-  #     dockerfile: Dockerfile
-  #   container_name: wankarlab-otp-service
-  #   ports:
-  #     - "8022:8084"
-  #   networks:
-  #     - microservices_network
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8084/health"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 10s
+
+  otp-service:
+    build:
+      context: ./otp-service
+      dockerfile: Dockerfile
+    container_name: wankarlab-otp-service
+    ports:
+      - "8083:8084"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   microservices_network:
     external: true
-    
+
 volumes:
   redis_data:

@@ -45,6 +45,87 @@
           "method": "POST"
         }
       ]
+    },
+    {
+      "endpoint": "/send-otp",
+      "method": "POST",
+      "output_encoding": "json",
+      "backend": [
+        {
+          "url_pattern": "/send-otp",
+          "host": ["http://otp-service:8084"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/auth/signup",
+      "method": "GET",
+      "input_headers": ["Authorization", "Content-Type", "Accept"], 
+      "output_encoding": "no-op", 
+      "backend": [
+        {
+          "url_pattern": "/api/v1/signup",
+          "host": ["http://token-service:8081"],
+          "encoding": "no-op",
+          "method": "GET",
+          "disable_host_sanitize": true,
+          "is_collection": false,
+          "allow_redirects": true 
+        }
+      ],
+      "extra_config": {
+        "modifier/martian": {
+          "header.Modifier": {
+            "scope": ["request", "response"],
+            "name": "X-Krakend",
+            "value": "true"
+          }
+        },
+        "proxy": {
+          "follow_redirects": true 
+        }
+      }
+    },
+    {
+      "endpoint": "/auth/signin",
+      "method": "POST",
+      "output_encoding": "json",
+      "backend": [
+        {
+          "url_pattern": "/api/v1/signin",
+          "host": ["http://token-service:8081"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/auth/signout",
+      "method": "POST",
+      "output_encoding": "json",
+      "backend": [
+        {
+          "url_pattern": "/api/v1/signout",
+          "host": ["http://token-service:8081"],
+          "encoding": "json",
+          "method": "POST"
+        }
+      ]
+    },
+    {
+      "endpoint": "/auth/callback",
+      "method": "GET",
+      "output_encoding": "json",
+      "backend": [
+        {
+          "url_pattern": "/api/v1/callback",
+          "host": ["http://token-service:8081"],
+          "encoding": "json",
+          "method": "GET"
+        }
+      ]
     }
   ],
   "extra_config": {
@@ -74,6 +155,9 @@
       "max_rate": 100,
       "capacity": 100,
       "every": "1m"
+    },
+    "backend/http": {
+      "return_error_details": true
     }
   }
 }
