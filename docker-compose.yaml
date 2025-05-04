@@ -1,37 +1,43 @@
 services:
-  krakend:
-    image: devopsfaith/krakend:latest
-    container_name: wankarlab-krakend
-    volumes:
-      - ./config:/etc/krakend
+  kong:
+    image: kong:latest
+    container_name: wankarlab-kong
     environment:
-      - FC_ENABLE=1
-      - FC_PARTIALS=/etc/krakend/partials
-      - FC_SETTINGS=/etc/krakend/settings
-      - KRAKEND_LUA_ENABLED=true
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_ADMIN_GUI_URL=http://localhost:8002
+      - KONG_LOG_LEVEL=debug
+      - KONG_DNS_ORDER=LAST,A,CNAME
+      - KONG_PROXY_TIMEOUT=60000
+    volumes:
+      - ./config/kong.yml:/kong/declarative/kong.yml
     ports:
-      - "7081:8080"
-      - "7091:8090"
-    command: ["run", "-c", "/etc/krakend/krakend-new.json"]
-    restart: unless-stopped
+      - "8025:8000"  # Proxy
+      - "8001:8001"  # Admin API
+      - "8002:8002"  # Admin GUI
     networks:
       - microservices_network
     depends_on:
-      - token-service
+      - wankarlab-token-service
+      - wankarlab-redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/__health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/status"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
 
-  token-service:
+  wankarlab-token-service:
     build:
-      context: ../services/token-service
+      context: /home/wsi/developer/projects/rantipay/wankarlab/services/token-service
       dockerfile: Dockerfile
     container_name: wankarlab-token-service
     ports:
-      - "8082:8081"
+      - "8021:8081"
     environment:
       - TS_KEYCLOAK_CLIENT_ID=otp-service-user
       - TS_KEYCLOAK_CLIENT_SECRET=gO8RVOxmRsVXpR8cEiVDEAXAMmE9eDUW
@@ -39,17 +45,19 @@ services:
       - TS_KEYCLOAK_JWKS_ENDPOINT=http://keycloak:8080/realms/rantipay/protocol/openid-connect/certs
       - TS_KEYCLOAK_SCOPES=openid profile email
       - TS_KEYCLOAK_AUDIENCE=317305190531334149
+      - TS_OTP_SERVICE_ENDPOINT=
+      - KEYCLOAK_PUBLIC_URL=http://keycloak:8080
+      - TS_REDIRECT_URI=http://token-service:8081/api/v1/callback
       - TS_REDIS_HOST=redis
       - TS_REDIS_PORT=6379
       - TS_REDIS_PASSWORD=
       - TS_REDIS_DB=0
       - TOKEN_SERVICE_PORT=8081
-      - TOKEN_SERVICE_LOG_LEVEL=debug
-    depends_on:
-      - redis
+      - LOG_LEVEL=debug
     networks:
       - microservices_network
-    restart: unless-stopped
+    depends_on:
+      - wankarlab-redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 30s
@@ -57,17 +65,13 @@ services:
       retries: 3
       start_period: 15s
 
-  redis:
+  wankarlab-redis:
     image: redis:alpine
     container_name: wankarlab-redis
     ports:
-      - "6380:6379"
-    volumes:
-      - redis_data:/data
-    command: ["redis-server", "--appendonly", "yes"]
+      - "8023:6379"
     networks:
       - microservices_network
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -78,6 +82,3 @@ services:
 networks:
   microservices_network:
     external: true
-
-volumes:
-  redis_data:

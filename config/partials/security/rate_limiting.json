@@ -1,6 +1,0 @@
-{
-  "max_rate": 100,
-  "strategy": "ip",
-  "client_max_rate": 10,
-  "capacity": 10
-}

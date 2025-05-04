@@ -1,0 +1,108 @@
+_format_version: "3.0"
+services:
+  - name: token-service
+    url: http://token-service:8081
+    routes:
+      - name: auth-signup
+        paths:
+          - /auth/signup
+        path_handling: v0
+        strip_path: true
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /api/v1/signup
+      - name: auth-register-otp
+        paths:
+          - /auth/register-otp
+        path_handling: v0
+        strip_path: true
+        methods:
+          - POST
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /api/v1/register-otp
+      - name: auth-verify-otp
+        paths:
+          - /auth/verify-otp
+        path_handling: v0
+        strip_path: true
+        methods:
+          - POST
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /api/v1/verify-otp
+      - name: auth-signin
+        paths:
+          - /auth/signin
+        path_handling: v0
+        strip_path: true
+        methods:
+          - POST
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /api/v1/signin
+      - name: auth-signout
+        paths:
+          - /auth/signout
+        path_handling: v0
+        strip_path: true
+        methods:
+          - POST
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /api/v1/signout
+      - name: auth-callback
+        paths:
+          - /auth/callback
+        path_handling: v0
+        strip_path: true
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /api/v1/callback
+plugins:
+  - name: cors
+    config:
+      origins:
+        - http://localhost:3000
+        - http://localhost:8080
+      methods:
+        - GET
+        - POST
+        - OPTIONS
+      headers:
+        - Authorization
+        - Content-Type
+        - Accept
+      credentials: true
+      max_age: 43200
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      redis_ssl: false
+      redis_ssl_verify: false
+      redis_timeout: 1000
+      redis_database: 0
+  - name: prometheus
+    config:
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
