@@ -1,8 +1,16 @@
+# kong.yml
+# Configuración del API Gateway Kong para Rantipay
+# Mantiene rutas existentes y añade nuevas para signup-email, send-otp, verify-otp
+# Corrige puerto de Redis a 8023 y usa path_handling: v0
+
 _format_version: "3.0"
+# Servicios
 services:
+  # Servicio para Token Service (autenticación)
   - name: token-service
     url: http://wankarlab-token-service:8081
     routes:
+      # Ruta existente: /auth/signup (OIDC original)
       - name: auth-signup
         paths:
           - /auth/signup
@@ -15,6 +23,20 @@ services:
             config:
               replace:
                 uri: /api/v1/signup
+      # Nueva ruta: /auth/signup-email (registro con Admin API)
+      - name: auth-signup-email
+        paths:
+          - /auth/signup-email
+        path_handling: v0
+        strip_path: true
+        methods:
+          - POST
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /api/v1/signup-email
+      # Ruta existente: /auth/register-otp
       - name: auth-register-otp
         paths:
           - /auth/register-otp
@@ -27,6 +49,7 @@ services:
             config:
               replace:
                 uri: /api/v1/register-otp
+      # Ruta existente: /auth/verify-otp
       - name: auth-verify-otp
         paths:
           - /auth/verify-otp
@@ -39,6 +62,7 @@ services:
             config:
               replace:
                 uri: /api/v1/verify-otp
+      # Ruta existente: /auth/signin
       - name: auth-signin
         paths:
           - /auth/signin
@@ -51,6 +75,7 @@ services:
             config:
               replace:
                 uri: /api/v1/signin
+      # Ruta existente: /auth/signout
       - name: auth-signout
         paths:
           - /auth/signout
@@ -63,6 +88,7 @@ services:
             config:
               replace:
                 uri: /api/v1/signout
+      # Ruta existente: /auth/callback
       - name: auth-callback
         paths:
           - /auth/callback
@@ -75,6 +101,41 @@ services:
             config:
               replace:
                 uri: /api/v1/callback
+
+  # Servicio para OTP Service
+  - name: otp-service
+    url: http://otp-service:8084
+    routes:
+      # Nueva ruta: /auth/send-otp
+      - name: auth-send-otp
+        paths:
+          - /auth/send-otp
+        path_handling: v0
+        strip_path: true
+        methods:
+          - POST
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /send-otp
+          - name: jwt
+      # Nueva ruta: /auth/verify-otp (nueva, para distinguir de la existente)
+      - name: auth-verify-otp-new
+        paths:
+          - /auth/verify-otp-new
+        path_handling: v0
+        strip_path: true
+        methods:
+          - POST
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /verify-otp
+          - name: jwt
+
+# Plugins globales
 plugins:
   - name: cors
     config:
@@ -97,7 +158,7 @@ plugins:
       policy: redis
       redis:
         host: redis
-        port: 6379
+        port: 8023
         ssl: false
         ssl_verify: false
         timeout: 1000

@@ -93,6 +93,9 @@ services:
       - TS_REDIS_DB=0
       - TOKEN_SERVICE_PORT=8081
       - LOG_LEVEL=debug
+      - KEYCLOAK_ADMIN_CLIENT_ID=admin-service  # Nueva variable para Admin API
+      - KEYCLOAK_ADMIN_CLIENT_SECRET=YU7WBnvZ9i3vxsnW4Ctu6lO70QDxtjWD  # Reemplazar con el client_secret real
+      - KEYCLOAK_ADMIN_API_URL=http://keycloak:8080/admin/realms/rantipay  # Nueva variable para Admin API      
     env_file:
       - ../services/token-service/.env.local
     networks:
