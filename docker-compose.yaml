@@ -28,11 +28,14 @@ services:
       - KONG_ADMIN_LISTEN=0.0.0.0:8001
     ports:
       - "8025:8000"
-      - "8001:8001"  # Exponer API de administración
+      - "8001:8001"
     depends_on:
       - kong_postgres
     networks:
       - microservices_network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
@@ -74,17 +77,16 @@ services:
       redis:
         condition: service_healthy
     environment:
-      #- KEYCLOAK_PUBLIC_URL=http://keycloak:8080  # Ajustado a hostname de la red
       - KEYCLOAK_PUBLIC_URL=http://localhost:8020
-      - TS_KEYCLOAK_TOKEN_ENDPOINT=http://keycloak:8080/realms/rantipay/protocol/openid-connect/token  # Ajustado a hostname
-      - TS_KEYCLOAK_JWKS_ENDPOINT=http://keycloak:8080/realms/rantipay/protocol/openid-connect/certs  # Ajustado a hostname
+      - TS_KEYCLOAK_TOKEN_ENDPOINT=http://keycloak:8080/realms/rantipay/protocol/openid-connect/token
+      - TS_KEYCLOAK_JWKS_ENDPOINT=http://keycloak:8080/realms/rantipay/protocol/openid-connect/certs
       - TS_KEYCLOAK_CLIENT_ID=otp-service-user
       - TS_KEYCLOAK_CLIENT_SECRET=gO8RVOxmRsVXpR8cEiVDEAXAMmE9eDUW
       - TS_KEYCLOAK_SCOPES=openid profile email
       - TS_KEYCLOAK_AUDIENCE=317305190531334149
       - TS_OTP_VERIFY_ENDPOINT=http://otp-service:8084/verify-otp
       - TS_OTP_SERVICE_ENDPOINT=http://otp-service:8084/send-otp
-      - TS_REDIRECT_URI=http://localhost:8025/api/v1/callback
+      - TS_REDIRECT_URI=http://localhost:8025/api/v1/callback  # Ajustado para usar el puerto de Kong
       - TS_REDIS_HOST=redis
       - TS_REDIS_PORT=6379
       - TS_REDIS_PASSWORD=
@@ -102,7 +104,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
-
   redis:
     image: redis:alpine
     container_name: wankarlab-redis
